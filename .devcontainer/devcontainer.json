@@ -1,0 +1,18 @@
+{
+	"name": "Python Development",
+	"image": "ghcr.io/metinsenturk/devcontainer-templates/simple-python:3.12",
+	"workspaceFolder": "/workspace",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+	"remoteUser": "vscode",
+	
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.isort",
+				"ms-python.autopep8",
+				"ms-python.mypy-type-checker"
+			]
+		}
+	}
+}
