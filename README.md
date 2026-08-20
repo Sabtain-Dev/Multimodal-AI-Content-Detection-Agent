@@ -1,32 +1,24 @@
-Project Name
-Multimodal AI Content Detection Agent
+# Multimodal AI Content Detection Agent
 
-Description
-A multimodal system for detecting potentially AI-generated
-text, images, audio, and video using pretrained models.
+**Status:** Day 1 — Project Foundation
 
-Project Objective
-Develop a resource-efficient AI detection system using
-open-source/pretrained models without fine-tuning in V1.
+## Description
+A multimodal system designed to detect potentially AI-generated text, images, audio, and video using open-source pretrained models.
 
-Modalities
-- Text
-- Image
-- Audio
-- Video
+## Project Objective
+Develop a resource-efficient AI detection system leveraging pretrained models without fine-tuning in Version 1.
 
-Technology
-- Python
-- PyTorch
-- Hugging Face
-- FastAPI
-- Gradio
-- LangGraph
-- GitHub
-- Google Colab
+## Modalities
+* Text
+* Image
+* Audio
+* Video
 
-Development Approach
-Learn → Experiment → Implement → Evaluate → Integrate → Deploy
+## Tech Stack
+* **Core Language & ML Frameworks:** Python, PyTorch
+* **AI & Agent Workflows:** Hugging Face, LangGraph
+* **Backend & Interface:** FastAPI, Gradio
+* **Version Control & Compute:** GitHub, Google Colab
 
-Status
-Day 1 — Project Foundation
+## Development Approach
+**Learn** $\rightarrow$ **Experiment** $\rightarrow$ **Implement** $\rightarrow$ **Evaluate** $\rightarrow$ **Integrate** $\rightarrow$ **Deploy**
