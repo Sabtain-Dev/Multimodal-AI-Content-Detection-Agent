@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+.env.*
+
+# Models and datasets
+models/
+datasets/
+data/
+
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Generated files
+outputs/
+results/
+temp/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
