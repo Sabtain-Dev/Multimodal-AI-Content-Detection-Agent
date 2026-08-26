@@ -29,45 +29,7 @@ flowchart TD
     style DA fill:#f3e5f5,stroke:#7b1fa2,color:#111827,stroke-width:2px
     style IR fill:#fce4ec,stroke:#c2185b,color:#111827,stroke-width:2px
     style EA fill:#e0f7fa,stroke:#00838f,color:#111827,stroke-width:2px
-    style FR fill:#fff8e1,stroke:#f9a825,color:#111827,stroke-width:3px
-```
-
----
-
-##  Processing Pipeline
-
-The system follows a modular processing pipeline:
-
-```text
-  USER
-   │
-   ▼
-  WEB INTERFACE
-   │
-   ▼
-  FASTAPI BACKEND
-   │
-   ▼
-  DETECTION AGENT
-   │
-   ▼
-  INPUT ROUTER
-   │
-   ├──────────────┬──────────────┬──────────────┐
-   ▼              ▼              ▼              ▼
-  TEXT          IMAGE           AUDIO            VIDEO
-DETECTOR       DETECTOR       DETECTOR       DETECTOR
-   │              │              │              │
-   └──────────────┴──────────────┴──────────────┘
-                          │
-                          ▼
-                      EVIDENCE
-                   AGGREGATOR
-                          │
-                          ▼
-                      FINAL REPORT
-```
-
+    style FR fill:#fff8e1,stroke:#f9a825,color:#111827,stroke-width:3```
 ---
 
 #  Complete System Architecture
