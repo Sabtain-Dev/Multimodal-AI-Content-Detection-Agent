@@ -50,3 +50,18 @@ multimodal-ai-content-detection-agent/
 ├── pytest.ini
 ├── README.md
 └── requirements.txt
+```
+
+## Quickstart & Testing
+### Install Dependencies:
+```Bash
+pip install -r requirements.txt
+```
+
+### Run Standardized Tests:
+```Bash
+pytest -s
+```
+
+### Development Approach
+Learn $\rightarrow$ Experiment $\rightarrow$ Implement $\rightarrow$ Evaluate $\rightarrow$ Integrate $\rightarrow$ Deploy
