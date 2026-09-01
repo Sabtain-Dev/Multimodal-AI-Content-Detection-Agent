@@ -1,0 +1,11 @@
+id,text
+1,"Artificial intelligence is transforming many industries."
+2,"This project faced several limitations related to data, hardware, and time resources. One of the main challenges was the limited availability of high-quality Pashto speech datasets with accurate transcriptions. Collecting and preprocessing regional audio data required significant effort and manual verification."
+3,"This project focuses on developing a speech-to-text system for the Pashto language by fine-tuning the Whisper model using regional speech data. The system is designed to improve transcription accuracy for Pashto speakers, especially for local accents and commonly used vocabulary."
+4,"These strategies encourage mutual respect, improved communication, and better teamwork, which can reduce generational conflict and improve overall productivity."
+5,"Justification: Baby Boomers typically value organizational loyalty, stability, clear authority structures, and formal reporting systems. Mr. Rashid’s preference for hierarchy and structured work environments reflects these characteristics."
+6,"An example of deep-level diversity is the difference in attitudes and work styles between younger developers and senior leads. Younger developers focus on innovative ideas, while senior leads emphasize discipline and experience. Deep-level diversity refers to differences in values, beliefs, personalities, and work preferences."
+7,"The project aims to enhance the performance of the Whisper model for Pashto speech recognition by fine-tuning it with regional audio data. This approach is expected to improve transcription accuracy, particularly for local accents and commonly used vocabulary."
+8,"Refactor python files to isolate single-chunk predictions, handle chunk aggregation, enforce threshold configuration, and attach short-text warnings."
+9,"Here is the complete implementation code, schema updates, evaluation scripts, and test suite for Day 6."
+10,"The histogram shows that most students spend between 2.5 to 3.5 hours daily on educational apps."
