@@ -1,4 +1,6 @@
 torch
 transformers
+sentencepiece
+onnxruntime
 pytest
 pandas
