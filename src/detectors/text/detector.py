@@ -6,7 +6,7 @@ from .preprocessing import validate_and_clean_text, chunk_text_by_tokens
 from .schemas import TextDetectionResult, ChunkResult
 
 DEFAULT_MODEL_NAME = "Oxidane/tmr-ai-text-detector"
-DEFAULT_THRESHOLD = 0.5
+DEFAULT_THRESHOLD = 0.50
 SHORT_TEXT_CHAR_THRESHOLD = 50
 
 class TextAIDetector:
@@ -24,14 +24,12 @@ class TextAIDetector:
         self.chunk_size = chunk_size
         self.overlap = overlap
 
-        # Load Tokenizer & Model
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
         self.model.to(self.device)
         self.model.eval()
 
     def _predict_chunk(self, chunk_text: str) -> tuple[float, float, int]:
-        """Runs model inference on a single text chunk."""
         inputs = self.tokenizer(
             chunk_text,
             return_tensors="pt",
@@ -45,21 +43,19 @@ class TextAIDetector:
             outputs = self.model(**inputs)
             probabilities = torch.softmax(outputs.logits, dim=-1).squeeze(0)
 
-        # Label 0: Human, Label 1: AI (Standard TMR Mapping)
         human_score = float(probabilities[0].cpu().item())
         ai_score = float(probabilities[1].cpu().item())
 
         return ai_score, human_score, token_count
 
-    def detect(self, text: str) -> TextDetectionResult:
+    def detect(self, text: str, threshold: Optional[float] = None) -> TextDetectionResult:
+        active_threshold = threshold if threshold is not None else self.threshold
         cleaned_text = validate_and_clean_text(text)
         
-        # Determine short text warning
         warning = None
         if len(cleaned_text) < SHORT_TEXT_CHAR_THRESHOLD:
             warning = "Input text is very short. Detection scores may be less reliable."
 
-        # Token-based chunking
         text_chunks = chunk_text_by_tokens(
             text=cleaned_text,
             tokenizer=self.tokenizer,
@@ -73,7 +69,7 @@ class TextAIDetector:
         for idx, chunk_str in enumerate(text_chunks):
             ai_score, human_score, token_count = self._predict_chunk(chunk_str)
             
-            if ai_score >= self.threshold:
+            if ai_score >= active_threshold:
                 ai_chunk_count += 1
 
             chunk_results.append(
@@ -85,17 +81,17 @@ class TextAIDetector:
                 )
             )
 
-        # Aggregation: Mean AI probability across all analyzed chunks
         avg_ai_score = sum(c.ai_score for c in chunk_results) / len(chunk_results)
         avg_human_score = 1.0 - avg_ai_score
 
-        prediction = "likely_ai_generated" if avg_ai_score >= self.threshold else "likely_human"
+        prediction = "likely_ai_generated" if avg_ai_score >= active_threshold else "likely_human"
 
         return TextDetectionResult(
             modality="text",
             prediction=prediction,
             ai_score=round(avg_ai_score, 4),
             human_score=round(avg_human_score, 4),
+            threshold_used=active_threshold,
             model_name=self.model_name,
             status="success",
             chunks_analyzed=len(chunk_results),
@@ -105,7 +101,7 @@ class TextAIDetector:
             warning=warning,
             metadata={
                 "device": self.device,
-                "threshold": self.threshold,
+                "threshold": active_threshold,
                 "chunk_size": self.chunk_size,
                 "overlap": self.overlap
             }

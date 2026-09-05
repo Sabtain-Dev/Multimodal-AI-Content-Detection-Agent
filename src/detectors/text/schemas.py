@@ -14,6 +14,7 @@ class TextDetectionResult:
     prediction: str
     ai_score: float
     human_score: float
+    threshold_used: float
     model_name: str
     status: str
     chunks_analyzed: int
@@ -29,6 +30,7 @@ class TextDetectionResult:
             "prediction": self.prediction,
             "ai_score": self.ai_score,
             "human_score": self.human_score,
+            "threshold_used": self.threshold_used,
             "model_name": self.model_name,
             "status": self.status,
             "chunks_analyzed": self.chunks_analyzed,

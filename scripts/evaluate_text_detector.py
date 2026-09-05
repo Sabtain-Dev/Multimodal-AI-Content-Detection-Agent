@@ -9,17 +9,19 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from src.detectors.text.detector import TextAIDetector
 
 
-def run_evaluation():
-    base_dir = (
-        Path(__file__).resolve().parents[1]
-        / "data"
-        / "text"
-        / "evaluation"
-    )
+def run_evaluation_and_save():
+    project_root = Path(__file__).resolve().parents[1]
+
+    base_dir = project_root / "data" / "text" / "evaluation"
+    results_dir = project_root / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     human_dir = base_dir / "human"
     ai_dir = base_dir / "ai"
 
+    # --------------------------------------------------
+    # Check Evaluation Directories
+    # --------------------------------------------------
     if not human_dir.exists() or not ai_dir.exists():
         print(f"Error: Evaluation directories not found at {base_dir}")
         print("Please create:")
@@ -29,118 +31,120 @@ def run_evaluation():
 
     detector = TextAIDetector()
 
+    records = []
+
+    # Confusion matrix counters
     tp = 0
     fp = 0
     tn = 0
     fn = 0
 
     # --------------------------------------------------
-    # Evaluate Human Samples
+    # Process Evaluation Files
     # --------------------------------------------------
-    print("\n====================================================")
-    print("              HUMAN SAMPLE EVALUATION")
-    print("====================================================")
+    def process_files(files_dir, actual_label):
+        nonlocal tp, fp, tn, fn
 
-    human_files = sorted(human_dir.glob("*.csv"))
+        files = sorted(files_dir.glob("*.csv"))
 
-    if not human_files:
-        print("No human CSV files found.")
+        if not files:
+            print(f"Warning: No CSV files found in {files_dir}")
+            return
 
-    for file_path in human_files:
-        df = pd.read_csv(file_path)
+        for file_path in files:
+            df = pd.read_csv(file_path)
 
-        if "text" not in df.columns:
-            print(f"Error: 'text' column not found in {file_path.name}")
-            continue
-
-        for index, row in df.iterrows():
-            text = str(row["text"]).strip()
-
-            if not text:
+            if "text" not in df.columns:
+                print(
+                    f"Warning: 'text' column not found in "
+                    f"{file_path.name}. Skipping file."
+                )
                 continue
 
-            result = detector.detect(text)
+            for index, row in df.iterrows():
+                text = str(row["text"]).strip()
 
-            model_prediction = (
-                "AI"
-                if result.prediction == "likely_ai_generated"
-                else "HUMAN"
-            )
+                if not text:
+                    continue
 
-            actual_label = "HUMAN"
+                result = detector.detect(text)
 
-            if model_prediction == "AI":
-                fp += 1
-                status = "FP"
-            else:
-                tn += 1
-                status = "TN"
+                model_prediction = (
+                    "AI"
+                    if result.prediction == "likely_ai_generated"
+                    else "HUMAN"
+                )
 
-            print(
-                f"\n[{status}] {file_path.name} | Row {index + 1}\n"
-                f"     Actual    : {actual_label}\n"
-                f"     Model     : {model_prediction}\n"
-                f"     AI Score  : {result.ai_score:.4f}"
-            )
+                # ------------------------------------------
+                # Update Confusion Matrix
+                # ------------------------------------------
+                if actual_label == "AI":
+                    if model_prediction == "AI":
+                        tp += 1
+                    else:
+                        fn += 1
+                else:
+                    if model_prediction == "AI":
+                        fp += 1
+                    else:
+                        tn += 1
+
+                # ------------------------------------------
+                # Calculate Text Statistics
+                # ------------------------------------------
+                word_count = len(text.split())
+
+                token_count = sum(
+                    chunk.token_count
+                    for chunk in result.chunk_results
+                )
+
+                # ------------------------------------------
+                # Save Detailed Sample Result
+                # ------------------------------------------
+                records.append(
+                    {
+                        "file_name": file_path.name,
+                        "row_index": index + 1,
+                        "actual_label": actual_label,
+                        "prediction": model_prediction,
+                        "ai_score": result.ai_score,
+                        "human_score": result.human_score,
+                        "chunks_analyzed": result.chunks_analyzed,
+                        "word_count": word_count,
+                        "token_count": token_count,
+                        "text_snippet": (
+                            text[:80] + "..."
+                            if len(text) > 80
+                            else text
+                        ),
+                    }
+                )
+
+    # --------------------------------------------------
+    # Evaluate Human Samples
+    # --------------------------------------------------
+    print("\nProcessing HUMAN samples...")
+    process_files(human_dir, "HUMAN")
 
     # --------------------------------------------------
     # Evaluate AI Samples
     # --------------------------------------------------
-    print("\n====================================================")
-    print("                AI SAMPLE EVALUATION")
-    print("====================================================")
-
-    ai_files = sorted(ai_dir.glob("*.csv"))
-
-    if not ai_files:
-        print("No AI CSV files found.")
-
-    for file_path in ai_files:
-        df = pd.read_csv(file_path)
-
-        if "text" not in df.columns:
-            print(f"Error: 'text' column not found in {file_path.name}")
-            continue
-
-        for index, row in df.iterrows():
-            text = str(row["text"]).strip()
-
-            if not text:
-                continue
-
-            result = detector.detect(text)
-
-            model_prediction = (
-                "AI"
-                if result.prediction == "likely_ai_generated"
-                else "HUMAN"
-            )
-
-            actual_label = "AI"
-
-            if model_prediction == "AI":
-                tp += 1
-                status = "TP"
-            else:
-                fn += 1
-                status = "FN"
-
-            print(
-                f"\n[{status}] {file_path.name} | Row {index + 1}\n"
-                f"     Actual    : {actual_label}\n"
-                f"     Model     : {model_prediction}\n"
-                f"     AI Score  : {result.ai_score:.4f}"
-            )
+    print("Processing AI samples...")
+    process_files(ai_dir, "AI")
 
     # --------------------------------------------------
-    # Calculate Metrics
+    # Check Results
     # --------------------------------------------------
     total = tp + fp + tn + fn
 
     if total == 0:
-        print("\nNo evaluation samples found.")
+        print("\nNo valid evaluation samples found.")
         return
 
+    # --------------------------------------------------
+    # Calculate Performance Metrics
+    # --------------------------------------------------
     accuracy = (tp + tn) / total
 
     precision = (
@@ -155,17 +159,53 @@ def run_evaluation():
         else 0.0
     )
 
-    f1 = (
+    f1_score = (
         (2 * precision * recall) / (precision + recall)
         if (precision + recall) > 0
         else 0.0
     )
 
     # --------------------------------------------------
-    # Final Results
+    # Save Detailed Results
     # --------------------------------------------------
-    print("\n\n====================================================")
-    print("                 EVALUATION RESULTS")
+    results_df = pd.DataFrame(records)
+
+    detailed_results_path = results_dir / "tmr_results.csv"
+    results_df.to_csv(
+        detailed_results_path,
+        index=False
+    )
+
+    # --------------------------------------------------
+    # Save Evaluation Summary
+    # --------------------------------------------------
+    summary_df = pd.DataFrame(
+        [
+            {
+                "total_samples": total,
+                "true_positives": tp,
+                "false_positives": fp,
+                "true_negatives": tn,
+                "false_negatives": fn,
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "f1_score": f1_score,
+            }
+        ]
+    )
+
+    summary_path = results_dir / "evaluation_summary.csv"
+    summary_df.to_csv(
+        summary_path,
+        index=False
+    )
+
+    # --------------------------------------------------
+    # Display Final Results
+    # --------------------------------------------------
+    print("\n====================================================")
+    print("                  EVALUATION RESULTS")
     print("====================================================")
 
     print(f"Total Samples   : {total}")
@@ -176,10 +216,25 @@ def run_evaluation():
 
     print("\n---------------- Performance -----------------------")
 
-    print(f"Accuracy        : {accuracy:.4f} ({accuracy * 100:.2f}%)")
-    print(f"Precision       : {precision:.4f} ({precision * 100:.2f}%)")
-    print(f"Recall          : {recall:.4f} ({recall * 100:.2f}%)")
-    print(f"F1 Score        : {f1:.4f} ({f1 * 100:.2f}%)")
+    print(
+        f"Accuracy        : {accuracy:.4f} "
+        f"({accuracy * 100:.2f}%)"
+    )
+
+    print(
+        f"Precision       : {precision:.4f} "
+        f"({precision * 100:.2f}%)"
+    )
+
+    print(
+        f"Recall          : {recall:.4f} "
+        f"({recall * 100:.2f}%)"
+    )
+
+    print(
+        f"F1 Score        : {f1_score:.4f} "
+        f"({f1_score * 100:.2f}%)"
+    )
 
     print("\n---------------- Interpretation --------------------")
 
@@ -191,8 +246,13 @@ def run_evaluation():
     print(f"  Correct AI    : {tp}")
     print(f"  Wrongly Human : {fn}")
 
+    print("\n---------------- Output Files ----------------------")
+
+    print(f"Detailed Results : {detailed_results_path}")
+    print(f"Evaluation Summary: {summary_path}")
+
     print("====================================================")
 
 
 if __name__ == "__main__":
-    run_evaluation()
+    run_evaluation_and_save()
