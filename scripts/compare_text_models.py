@@ -1,10 +1,14 @@
+import importlib
 import sys
 from pathlib import Path
+from typing import Any
+
 import pandas as pd
 import torch
-import onnxruntime as ort  # pyright: ignore[reportMissingTypeStubs]
 from huggingface_hub import hf_hub_download
 from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification
+
+ort: Any = importlib.import_module("onnxruntime")
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from src.detectors.text.preprocessing import validate_and_clean_text, chunk_text_by_tokens

@@ -1,70 +1,133 @@
 # Text Detector Error Analysis
 
-## Model
+## Models Evaluated
 
-`mujian2026/multilingual-ai-text-detector`
+- `mujian2026/multilingual-ai-text-detector`
+- `Oxidane/tmr-ai-text-detector`
 
-## Evaluation Dataset
+*No fine-tuning performed. Both models evaluated using pretrained weights.*
 
-| Class | Samples |
-| --- | ---: |
-| Human | 12 |
-| AI | 10 |
-| **Total** | **22** |
+---
 
-## Overall Results
+## Dataset
 
-Evaluation used an AI-score threshold of `0.50`. Scores at or above the threshold were classified as AI-generated.
+**101 samples total:**
+- Human: 51
+- AI: 50
 
-| Metric | Result |
-| --- | ---: |
-| Accuracy | 95.45% |
-| Precision | 100.00% |
-| Recall | 90.00% |
-| F1 score | 94.74% |
-| False positives | 0 |
-| False negatives | 1 |
+Same dataset used for both models.
 
-The model produced no false positives and missed one AI sample.
+---
 
-## False Negative Analysis
+## Classification Method
 
-| Field | Value |
-| --- | --- |
-| Dataset file | `ai.csv` |
-| Row | 8 |
-| Actual label | AI |
-| Predicted label | HUMAN |
-| AI score | 0.0171 |
-| Token count | 40 |
-| Text type | Technical / instruction-based (preliminary) |
+- AI score `>= threshold` → **AI**
+- AI score `< threshold` → **HUMAN**
+- Thresholds evaluated: 0.50 to 0.95
 
-### Observation
+---
 
-The model classified this AI-generated sample as human with high confidence. Because the evaluation set contains only one comparable false negative, the cause cannot be established from this result alone.
+## Results
 
-### Possible Factors
+### TMR — `Oxidane/tmr-ai-text-detector`
 
-- Technical or instruction-based writing style
-- Short sample length
-- Code-related terminology
+| Threshold | Accuracy | Precision | Recall | F1 Score | FP | FN |
+|----------:|---------:|----------:|-------:|---------:|---:|---:|
+| 0.50 | 68.32% | 60.98% | 100.00% | 75.76% | 32 | 0 |
+| 0.60 | 69.31% | 62.03% | 98.00% | 75.97% | 30 | 1 |
+| **0.70** | **71.29%** | **64.00%** | **96.00%** | **76.80%** | 27 | 2 |
+| 0.80 | 71.29% | 65.67% | 88.00% | 75.21% | 23 | 6 |
+| 0.90 | 70.30% | 66.13% | 82.00% | 73.21% | 21 | 9 |
+| **0.95** | **73.27%** | **73.47%** | 72.00% | 72.73% | 13 | 14 |
 
-These factors are hypotheses rather than confirmed causes. More samples with similar characteristics are required for a reliable error analysis.
+- **Best Accuracy:** 73.27% @ threshold 0.95
+- **Best F1:** 76.80% @ threshold 0.70
 
-## Model Comparison
+---
 
-The same 22-record dataset was also used to compare the multilingual model with `Oxidane/tmr-ai-text-detector`.
+### Multilingual — `mujian2026/multilingual-ai-text-detector`
 
-| Model | Best threshold | Accuracy | Precision | Recall | F1 score | FP | FN |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| TMR | 0.70-0.90 | 68.18% | 58.82% | 100.00% | 74.07% | 7 | 0 |
-| Multilingual | 0.50-0.95 | 95.45% | 100.00% | 90.00% | 94.74% | 0 | 1 |
+| Threshold | Accuracy | Precision | Recall | F1 Score | FP | FN |
+|----------:|---------:|----------:|-------:|---------:|---:|---:|
+| **0.50** | **75.25%** | **76.60%** | **72.00%** | **74.23%** | 11 | 14 |
+| **0.60** | **75.25%** | **76.60%** | **72.00%** | **74.23%** | 11 | 14 |
+| 0.70 | 74.26% | 76.09% | 70.00% | 72.92% | 11 | 15 |
+| 0.80 | 74.26% | 76.09% | 70.00% | 72.92% | 11 | 15 |
+| 0.90 | 74.26% | 76.09% | 70.00% | 72.92% | 11 | 15 |
+| 0.95 | 73.27% | 75.56% | 68.00% | 71.58% | 11 | 16 |
 
-The multilingual model achieved the strongest overall balance on this dataset. The result is indicative only because the evaluation set is small and may not represent other domains, languages, or text-generation systems.
+- **Best Accuracy:** 75.25% @ thresholds 0.50–0.60
+- **Best F1:** 74.23% @ thresholds 0.50–0.60
+
+---
+
+## Best Performance Comparison
+
+| Model | Best Accuracy | Best F1 | Precision | Recall | FP | FN |
+|-------|--------------:|--------:|----------:|-------:|---:|---:|
+| **TMR** | 73.27% @ 0.95 | **76.80%** @ 0.70 | 73.47% | 72.00% | 13 | 14 |
+| **Multilingual** | **75.25%** @ 0.50/0.60 | 74.23% @ 0.50/0.60 | **76.60%** | 72.00% | **11** | 14 |
+
+---
+
+## Error Summary
+
+### TMR
+- **False Positives:** 13–32 (decreases as threshold increases)
+- **False Negatives:** 0–14 (increases as threshold increases)
+- High AI scores on human samples observed (some human samples scored ~0.98)
+
+### Multilingual
+- **False Positives:** 11 (stable across thresholds)
+- **False Negatives:** 14–16 (slight increase at higher thresholds)
+- Fewer false positives than TMR
+- Misses more AI samples than TMR at lower thresholds
+
+---
+
+## Comparison with Earlier 22-Sample Evaluation
+
+| Model | 22-Sample Accuracy | 101-Sample Accuracy |
+|-------|-------------------:|--------------------:|
+| TMR | 68.18% | 73.27% |
+| Multilingual | 95.45% | 75.25% |
+
+The multilingual model's performance dropped significantly, demonstrating that smaller evaluations can be overly optimistic.
+
+---
+
+## Key Findings
+
+1. **Multilingual detector:** Highest accuracy (**75.25%**)
+2. **TMR:** Highest F1 score (**76.80%** @ threshold 0.70)
+3. **Multilingual:** Fewer false positives (11 vs 13 minimum for TMR)
+4. **TMR:** Higher recall at lower thresholds but more false positives
+5. **Neither model** provides definitive evidence of AI authorship
+6. **22-sample evaluation** was misleading; 101-sample results are more reliable
+
+---
+
+## Model Selection Recommendation
+
+| Priority | Recommended Model | Threshold |
+|----------|-------------------|-----------|
+| Higher accuracy & fewer false positives | Multilingual | 0.50–0.60 |
+| Higher F1 & stronger AI recall | TMR | 0.70 |
+
+**Both models should remain candidates.** Further validation on larger, more diverse datasets is required.
+
+---
+
+## Limitations
+
+- Small dataset (101 samples)
+- May not represent all domains, AI systems, or languages
+- Thresholds optimized on same evaluation data (not independently validated)
+- Results describe performance on this dataset, not universal accuracy
+
+---
 
 ## Reproduction
-
-Run these commands from the repository root with the project virtual environment activated:
 
 ```bash
 source .venv/bin/activate
@@ -72,4 +135,16 @@ python3 scripts/inspect_text_detector_2.py
 python3 scripts/compare_text_models.py
 ```
 
-The scripts print the evaluation summary and write comparison CSV files to the `results/` directory. Hugging Face authentication is optional, but setting `HF_TOKEN` avoids unauthenticated-request warnings and provides higher Hub rate limits.
+CSV outputs saved to `results/` directory. HF_TOKEN optional (higher rate limits with authentication).
+
+---
+
+## Conclusion
+
+The expanded 101-sample evaluation provides a more reliable basis for comparison than the original 22-sample evaluation.
+
+- **Best Accuracy:** Multilingual (75.25%)
+- **Best F1:** TMR (76.80% @ threshold 0.70)
+
+* Neither model is definitive. 
+* Next step: **detailed error analysis and validation on larger, more diverse dataset** before final model selection.
