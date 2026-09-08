@@ -73,10 +73,39 @@ This document evaluates candidate models for the Text AI Detection module of the
 
 ---
 
+## Candidate 3: Gradient AI Text Detector
+
+* **Repository:** `ShantanuT01/gradient-ai-text-detector`
+* **Architecture:** DeBERTa-v3-based sequence classifier
+* **Task:** Binary AI vs. Human text classification
+* **Output:** Single binary logit converted to an AI probability with sigmoid
+
+### Local Evaluation Summary
+
+On the shared 101-sample dataset, using threshold `0.50`:
+
+| Accuracy | Precision | Recall | F1 Score | FP | FN |
+|---------:|----------:|-------:|---------:|---:|---:|
+| 82.18% | 100.00% | 64.00% | 78.05% | 0 | 18 |
+
+### Strengths
+- Produced no false positives on this evaluation set.
+- Adds a model with a different output and model family to the ensemble.
+- Performs well as a conservative supporting signal.
+
+### Weaknesses & Limitations
+- Lower recall than the three-model majority on this dataset.
+- The checkpoint exposes one logit and requires sigmoid handling rather than
+  two-class softmax indexing.
+- Model-card coverage, language coverage, and generalization require further
+  validation.
+
+---
+
 ## Direct Model Comparison Matrix
 
-| Requirement / Metric | Multilingual Detector (`mujian2026`) | TMR Detector (`Oxidane` / `onnx-community`) |
-| :--- | :--- | :--- |
+| Requirement / Metric | Multilingual Detector (`mujian2026`) | TMR Detector (`Oxidane` / `onnx-community`) | Gradient Detector (`ShantanuT01`) |
+| :--- | :--- | :--- | :--- |
 | **Primary Focus** | Multilingual Screening | English AI Text Detection |
 | **Base Model** | XLM-RoBERTa-base | RoBERTa-base |
 | **Parameter Count** | ~279 million | ~125 million |
@@ -85,12 +114,15 @@ This document evaluates candidate models for the Text AI Detection module of the
 | **Max Sequence Length** | 256 tokens | 512 tokens |
 | **Quantized Model Size** | ~181 MB (`q4`) | ~126 MB (`int8` / `quantized`) |
 | **Primary Use Case** | Cross-lingual screening signal | High-precision English detector |
+| **Local Evaluation Accuracy** | 75.25% | 73.27% at best threshold | 82.18% |
+| **Local Evaluation F1** | 74.23% | 76.80% at threshold 0.70 | 78.05% |
+| **Output Handling** | Two-class softmax | Two-class softmax | Single-logit sigmoid |
 
 ---
 
 ## Final Architecture & Model Selection
 
-### Strategic Decision: Dual-Tiered Deployment
+### Strategic Decision: Three-Model Majority Ensemble
 
 1. **Primary English Detector:** `Oxidane/tmr-ai-text-detector`
    * **Role:** Default inference engine for English input. Selected due to superior training dataset size, lower parameter count, 512-token context length, and benchmark performance designed to reduce false positives.
@@ -98,6 +130,33 @@ This document evaluates candidate models for the Text AI Detection module of the
 2. **Secondary Multilingual Detector:** `mujian2026/multilingual-ai-text-detector`
    * **Role:** Fallback engine for multilingual screening (Chinese, Vietnamese, experimental cross-lingual evaluation).
 
+3. **Third Detector:** `ShantanuT01/gradient-ai-text-detector`
+  * **Role:** Independent supporting signal and tie breaker for the final
+    three-model majority vote.
+
+### Ensemble Evaluation
+
+The three-model comparison evaluated 101 samples: 51 human and 50 AI. The
+majority result was:
+
+| Metric | Result |
+|---|---:|
+| Accuracy | 84.16% |
+| Precision | 84.00% |
+| Recall | 84.00% |
+| F1 Score | 0.8400 |
+| True Positives | 42 |
+| False Positives | 8 |
+| True Negatives | 43 |
+| False Negatives | 8 |
+
+The result improved on the earlier two-model evaluation, which produced
+`56.44%` accuracy and `0.8780` F1 when uncertain disagreements were retained.
+Because the two evaluations use different final-decision rules, the metrics
+should be compared as separate operating points rather than as a controlled
+model-only experiment.
+
 ### Execution Strategy for V1 Baseline
 - Begin implementation using PyTorch and `transformers` on the primary model (`Oxidane/tmr-ai-text-detector`) to validate tokenization, text cleaning, logit processing, and schema formatting.
 - Transition inference to lightweight ONNX Runtime once PyTorch baseline validation and unit tests pass.
+- Run the three detectors sequentially in the agent to limit peak memory use.
