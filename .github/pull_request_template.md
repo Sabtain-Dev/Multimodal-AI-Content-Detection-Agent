@@ -6,9 +6,6 @@ Briefly explain what this PR changes.
 - 
 - 
 
-## Testing
-Describe how you tested the changes.
-
 ## Checklist
 - [ ] Code works as expected
 - [ ] Changes have been tested

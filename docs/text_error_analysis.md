@@ -4,8 +4,9 @@
 
 - `mujian2026/multilingual-ai-text-detector`
 - `Oxidane/tmr-ai-text-detector`
+- `ShantanuT01/gradient-ai-text-detector`
 
-*No fine-tuning performed. Both models evaluated using pretrained weights.*
+*No fine-tuning performed. All three models were evaluated using pretrained weights.*
 
 ---
 
@@ -15,7 +16,7 @@
 - Human: 51
 - AI: 50
 
-Same dataset used for both models.
+Same dataset used for all three models and the ensemble comparison.
 
 ---
 
@@ -61,12 +62,13 @@ Same dataset used for both models.
 
 ---
 
-## Best Performance Comparison
+## Best Individual Model Performance Comparison
 
 | Model | Best Accuracy | Best F1 | Precision | Recall | FP | FN |
 |-------|--------------:|--------:|----------:|-------:|---:|---:|
 | **TMR** | 73.27% @ 0.95 | **76.80%** @ 0.70 | 73.47% | 72.00% | 13 | 14 |
 | **Multilingual** | **75.25%** @ 0.50/0.60 | 74.23% @ 0.50/0.60 | **76.60%** | 72.00% | **11** | 14 |
+| **Gradient** | **82.18%** @ 0.50 | 78.05% @ 0.50 | **100.00%** | 64.00% | **0** | 18 |
 
 ---
 
@@ -83,6 +85,40 @@ Same dataset used for both models.
 - Fewer false positives than TMR
 - Misses more AI samples than TMR at lower thresholds
 
+### Gradient — `ShantanuT01/gradient-ai-text-detector`
+
+Gradient was evaluated at threshold `0.50`. Its single output logit is
+converted with sigmoid before classification.
+
+| Accuracy | Precision | Recall | F1 Score | FP | FN |
+|---------:|----------:|-------:|---------:|---:|---:|
+| 82.18% | 100.00% | 64.00% | 78.05% | 0 | 18 |
+
+- True positives: 32
+- True negatives: 51
+- The model avoided false positives but missed 18 AI samples on this dataset.
+
+### Three-Model Majority Ensemble
+
+The agent runs TMR, multilingual, and Gradient sequentially, then assigns the
+class with at least two votes.
+
+| Metric | Result |
+|---|---:|
+| Full three-way agreement | 49 / 101 |
+| Accuracy | 84.16% |
+| Precision | 84.00% |
+| Recall | 84.00% |
+| F1 Score | 0.8400 |
+| True Positives | 42 |
+| False Positives | 8 |
+| True Negatives | 43 |
+| False Negatives | 8 |
+| Uncertain predictions | 0 |
+
+Among the 34 TMR/multilingual disagreements, Gradient voted AI in 6 cases and
+human in 28 cases.
+
 ---
 
 ## Comparison with Earlier 22-Sample Evaluation
@@ -98,12 +134,17 @@ The multilingual model's performance dropped significantly, demonstrating that s
 
 ## Key Findings
 
-1. **Multilingual detector:** Highest accuracy (**75.25%**)
-2. **TMR:** Highest F1 score (**76.80%** @ threshold 0.70)
-3. **Multilingual:** Fewer false positives (11 vs 13 minimum for TMR)
-4. **TMR:** Higher recall at lower thresholds but more false positives
-5. **Neither model** provides definitive evidence of AI authorship
-6. **22-sample evaluation** was misleading; 101-sample results are more reliable
+1. **Three-model majority:** Highest measured accuracy (**84.16%**) and F1
+	(**0.8400**) on the current evaluation set.
+2. **Gradient:** Highest measured precision (**100.00%**) and no false
+	positives, but lower recall (**64.00%**).
+3. **TMR:** Highest individual F1 among the earlier two models (**76.80%** at
+	threshold `0.70`).
+4. **Multilingual:** Strongest individual accuracy among the earlier two models
+	(**75.25%**).
+5. **No detector** provides definitive evidence of AI authorship.
+6. **22-sample evaluation** was misleading; the 101-sample results are more
+	informative but still limited.
 
 ---
 
@@ -111,10 +152,11 @@ The multilingual model's performance dropped significantly, demonstrating that s
 
 | Priority | Recommended Model | Threshold |
 |----------|-------------------|-----------|
-| Higher accuracy & fewer false positives | Multilingual | 0.50–0.60 |
-| Higher F1 & stronger AI recall | TMR | 0.70 |
+| Best current aggregate result | Three-model majority | TMR 0.70, Multilingual 0.50, Gradient 0.50 |
+| Highest individual precision | Gradient | 0.50 |
+| Higher F1 among the original two models | TMR | 0.70 |
 
-**Both models should remain candidates.** Further validation on larger, more diverse datasets is required.
+**All three models remain candidates within the ensemble.** Further validation on larger, more diverse datasets is required.
 
 ---
 
@@ -131,8 +173,11 @@ The multilingual model's performance dropped significantly, demonstrating that s
 
 ```bash
 source .venv/bin/activate
-python3 scripts/inspect_text_detector_2.py
+python3 scripts/dev/inspect_text_detector_2.py
+python3 scripts/dev/inspect_text_detector_3.py
+python3 scripts/evaluate_text_detector_3.py
 python3 scripts/compare_text_models.py
+python3 scripts/test_text_agent.py
 ```
 
 CSV outputs saved to `results/` directory. HF_TOKEN optional (higher rate limits with authentication).
@@ -143,8 +188,11 @@ CSV outputs saved to `results/` directory. HF_TOKEN optional (higher rate limits
 
 The expanded 101-sample evaluation provides a more reliable basis for comparison than the original 22-sample evaluation.
 
-- **Best Accuracy:** Multilingual (75.25%)
-- **Best F1:** TMR (76.80% @ threshold 0.70)
+- **Best individual accuracy:** Gradient (82.18%)
+- **Best individual F1 among TMR and multilingual:** TMR (76.80% @ threshold 0.70)
+- **Best current aggregate result:** Three-model majority (84.16% accuracy,
+  0.8400 F1)
 
-* Neither model is definitive. 
-* Next step: **detailed error analysis and validation on larger, more diverse dataset** before final model selection.
+* No detector is definitive.
+* Next step: **validation on a larger, more diverse, independently held-out
+	dataset** before making stronger model-selection claims.

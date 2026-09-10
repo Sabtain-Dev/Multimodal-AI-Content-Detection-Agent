@@ -1,6 +1,6 @@
 # Multimodal AI Content Detection Agent
 
-**Status:** Day 5 : Text AI Detector Module Baseline
+**Status:** Day 7 : Three-Model Text Detection Ensemble
 
 ## Description
 A multimodal system designed to detect potentially AI-generated text, images, audio, and video using open-source pretrained models.
@@ -9,7 +9,7 @@ A multimodal system designed to detect potentially AI-generated text, images, au
 Develop a resource-efficient AI detection system leveraging pretrained models without fine-tuning in Version 1.
 
 ## Modalities Progress
-* 🟢 **Text:** Baseline PyTorch/Transformers detector implemented (`Oxidane/tmr-ai-text-detector`)
+* 🟢 **Text:** Three-model detector and majority-vote agent implemented
 * ⚪ **Image:** Planned
 * ⚪ **Audio:** Planned
 * ⚪ **Video:** Planned
@@ -26,7 +26,21 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 ### Text Detection Architecture (V1)
 * **Primary Detector (English):** `Oxidane/tmr-ai-text-detector` (RoBERTa-base fine-tuned on 50k RAID samples with Focal Loss to minimize false positives).
 * **Secondary Detector (Multilingual):** `mujian2026/multilingual-ai-text-detector` (XLM-RoBERTa-base derivative reserved for cross-lingual screening).
-* **Pipeline Flow:** `Input Validation` $\rightarrow$ `Truncation (512 tokens)` $\rightarrow$ `PyTorch Inference` $\rightarrow$ `Softmax Logits` $\rightarrow$ `Standardized Schema Output`.
+* **Third Detector:** `ShantanuT01/gradient-ai-text-detector` (DeBERTa-v3-based single-logit classifier).
+* **Pipeline Flow:** `Input Validation` $\rightarrow$ `Token Chunking` $\rightarrow$ `Sequential Three-Model Inference` $\rightarrow$ `Softmax/Sigmoid Logit Normalization` $\rightarrow$ `Majority Vote` $\rightarrow$ `Standardized Schema Output`.
+
+### Latest Evaluation
+
+The current evaluation uses 101 samples: 51 human and 50 AI.
+
+| Configuration | Accuracy | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|
+| Gradient alone | 82.18% | 100.00% | 64.00% | 0.7805 |
+| Three-model majority | 84.16% | 84.00% | 84.00% | 0.8400 |
+
+The agent loads the three models sequentially to reduce peak memory usage. A
+two-out-of-three vote determines `likely_ai_generated` or `likely_human`, and
+the result reports each model score, vote counts, and agreement strength.
 
 ## Repository Structure
 
@@ -62,6 +76,21 @@ pip install -r requirements.txt
 ```Bash
 pytest -s
 ```
+
+### Run the Three-Model Agent:
+```Bash
+python3 scripts/test_text_agent.py
+```
+
+The project uses a virtual environment in `.venv`. Activate it first when the
+system Python does not contain the required dependencies:
+
+```Bash
+source .venv/bin/activate
+```
+
+Detailed evaluation outputs are written to `results/`, including
+`extended_gradient_results.csv` and `three_models_comparison.csv`.
 
 ### Development Approach
 Learn $\rightarrow$ Experiment $\rightarrow$ Implement $\rightarrow$ Evaluate $\rightarrow$ Integrate $\rightarrow$ Deploy

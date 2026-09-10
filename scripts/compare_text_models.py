@@ -1,165 +1,159 @@
-import importlib
+import gc
+import os
 import sys
 from pathlib import Path
-from typing import Any
-
 import pandas as pd
 import torch
-from huggingface_hub import hf_hub_download
-from transformers import AutoConfig, AutoTokenizer, AutoModelForSequenceClassification
-
-ort: Any = importlib.import_module("onnxruntime")
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from src.detectors.text.preprocessing import validate_and_clean_text, chunk_text_by_tokens
 
-MODELS = {
-    "TMR": "Oxidane/tmr-ai-text-detector",
-    "Multilingual": "mujian2026/multilingual-ai-text-detector"
-}
-MODEL_SUBFOLDER = "fp32"
+from src.detectors.text.detector import TextAIDetector
 
-THRESHOLDS = [0.50, 0.60, 0.70, 0.80, 0.90, 0.95]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATASET_DIR = PROJECT_ROOT / "data" / "text" / "evaluation"
+OUTPUT_CSV = PROJECT_ROOT / "results" / "three_models_comparison.csv"
 
-def get_ai_score_for_chunk(model, tokenizer, chunk_text, ai_label_index, device, session=None):
-    if session is not None:
-        inputs = tokenizer(chunk_text, return_tensors="np", truncation=True, max_length=512)
-        logits = torch.from_numpy(session.run(["logits"], inputs)[0])
-        probs = torch.softmax(logits, dim=-1).squeeze(0)
-        token_count = inputs["input_ids"].shape[1]
-        return float(probs[ai_label_index].item()), token_count
-
-    inputs = tokenizer(chunk_text, return_tensors="pt", truncation=True, max_length=512).to(device)
-    with torch.no_grad():
-        outputs = model(**inputs)
-        probs = torch.softmax(outputs.logits, dim=-1).squeeze(0)
-    return float(probs[ai_label_index].cpu().item()), inputs["input_ids"].shape[1]
-
-def evaluate_model_on_dataset(model_key, model_name, base_dir, device):
-    print(f"\n---> Evaluating {model_key} ({model_name})...")
-    session = None
-    if model_key == "Multilingual":
-        tokenizer = AutoTokenizer.from_pretrained(model_name, subfolder=MODEL_SUBFOLDER)
-        config = AutoConfig.from_pretrained(model_name, subfolder=MODEL_SUBFOLDER)
-        model_path = hf_hub_download(
-            model_name, filename=f"{MODEL_SUBFOLDER}/onnx/model.onnx"
-        )
-        session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
-        model = None
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
-        model.eval()
-        config = model.config
-
-    # Determine AI label index safely from config
-    id2label = config.id2label
-    ai_index = 1
-    for idx, label in id2label.items():
-        if "ai" in str(label).lower() or "generated" in str(label).lower():
-            ai_index = int(idx)
-            break
-
-    records = []
-    
-    def process_folder(folder_path, actual_label):
-        for csv_file in sorted(folder_path.glob("*.csv")):
-            df = pd.read_csv(csv_file)
-            if "text" not in df.columns:
-                continue
-            for idx, row in df.iterrows():
-                text = str(row["text"]).strip()
-                if not text:
-                    continue
-                
-                cleaned = validate_and_clean_text(text)
-                chunks = chunk_text_by_tokens(cleaned, tokenizer, chunk_size=480, overlap=32)
-                
-                chunk_scores = []
-                total_tokens = 0
-                for c in chunks:
-                    score, t_count = get_ai_score_for_chunk(
-                        model, tokenizer, c, ai_index, device, session
-                    )
-                    chunk_scores.append(score)
-                    total_tokens += t_count
-
-                avg_ai_score = sum(chunk_scores) / len(chunk_scores)
-                records.append({
-                    "model": model_key,
-                    "file_name": csv_file.name,
-                    "row_index": idx + 1,
-                    "actual_label": actual_label,
-                    "ai_score": round(avg_ai_score, 4),
-                    "token_count": total_tokens,
-                    "text_snippet": cleaned[:70] + "..."
-                })
-
-    process_folder(base_dir / "human", "HUMAN")
-    process_folder(base_dir / "ai", "AI")
-
-    # Cleanup memory before running next model
-    del model
-    del tokenizer
-    del session
+def clean_memory():
+    gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-    return pd.DataFrame(records)
+def evaluate_single_model(model_name: str, threshold: float, samples: list[dict]) -> list[dict]:
+    print(f"\n--- Loading and Evaluating: {model_name} (Threshold: {threshold}) ---")
+    detector = TextAIDetector(model_name=model_name, threshold=threshold)
+    
+    results = []
+    for item in samples:
+        text = item["text"]
+        res = detector.detect(text)
+        results.append({
+            "ai_score": res.ai_score,
+            "prediction": res.prediction  # 'likely_ai_generated' or 'likely_human'
+        })
+    
+    # Unload model and release memory
+    del detector
+    clean_memory()
+    return results
 
-def run_comparison():
-    project_root = Path(__file__).resolve().parents[1]
-    base_dir = project_root / "data" / "text" / "evaluation"
-    results_dir = project_root / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
+def main():
+    dataset_frames = []
+    for label, folder_name in (("human", "human"), ("ai", "ai")):
+        dataset_path = DATASET_DIR / folder_name / f"{folder_name}.csv"
+        if not dataset_path.exists():
+            print(f"Error: Dataset not found at {dataset_path}")
+            sys.exit(1)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+        frame = pd.read_csv(dataset_path)
+        frame["label"] = label
+        dataset_frames.append(frame)
 
-    all_raw_dfs = []
-    for m_key, m_name in MODELS.items():
-        raw_df = evaluate_model_on_dataset(m_key, m_name, base_dir, device)
-        raw_df.to_csv(results_dir / f"{m_key.lower()}_raw_results.csv", index=False)
-        all_raw_dfs.append(raw_df)
+    df_dataset = pd.concat(dataset_frames, ignore_index=True)
+    samples = df_dataset.to_dict(orient="records")
+    print(f"Loaded {len(samples)} samples from {DATASET_DIR}")
 
-    combined_raw = pd.concat(all_raw_dfs, ignore_index=True)
+    # 1. Evaluate TMR (RoBERTa)
+    tmr_results = evaluate_single_model(
+        model_name="Oxidane/tmr-ai-text-detector",
+        threshold=0.70,
+        samples=samples
+    )
 
-    # Threshold Sweeps Comparison
-    sweep_records = []
-    for m_key in MODELS.keys():
-        m_df = combined_raw[combined_raw["model"] == m_key]
-        for t in THRESHOLDS:
-            tp, fp, tn, fn = 0, 0, 0, 0
-            for _, row in m_df.iterrows():
-                pred = "AI" if row["ai_score"] >= t else "HUMAN"
-                act = row["actual_label"]
-                if act == "AI" and pred == "AI": tp += 1
-                elif act == "HUMAN" and pred == "AI": fp += 1
-                elif act == "HUMAN" and pred == "HUMAN": tn += 1
-                elif act == "AI" and pred == "HUMAN": fn += 1
+    # 2. Evaluate Multilingual (XLM-RoBERTa ONNX)
+    multi_results = evaluate_single_model(
+        model_name="mujian2026/multilingual-ai-text-detector",
+        threshold=0.50,
+        samples=samples
+    )
 
-            total = tp + fp + tn + fn
-            acc = (tp + tn) / total if total > 0 else 0
-            prec = tp / (tp + fp) if (tp + fp) > 0 else 0
-            rec = tp / (tp + fn) if (tp + fn) > 0 else 0
-            f1 = (2 * prec * rec) / (prec + rec) if (prec + rec) > 0 else 0
+    # 3. Evaluate Gradient (DeBERTa-v3-large)
+    gradient_results = evaluate_single_model(
+        model_name="ShantanuT01/gradient-ai-text-detector",
+        threshold=0.50,
+        samples=samples
+    )
 
-            sweep_records.append({
-                "Model": m_key,
-                "Threshold": t,
-                "Accuracy": round(acc, 4),
-                "Precision": round(prec, 4),
-                "Recall": round(rec, 4),
-                "F1_Score": round(f1, 4),
-                "FP": fp,
-                "FN": fn
-            })
+    # Combine results
+    combined_rows = []
+    for idx, row in df_dataset.iterrows():
+        t_res = tmr_results[idx]
+        m_res = multi_results[idx]
+        g_res = gradient_results[idx]
 
-    comparison_df = pd.DataFrame(sweep_records)
-    comparison_df.to_csv(results_dir / "models_threshold_comparison.csv", index=False)
+        label = row.get("label", row.get("actual_label", "unknown"))
 
-    print("\n================ MODEL COMPARISON SUMMARY ================")
-    print(comparison_df.to_string(index=False))
-    print("==========================================================")
+        # Determine 2-Model Ensemble Output (TMR + Multilingual)
+        if t_res["prediction"] == m_res["prediction"]:
+            v2_pred = t_res["prediction"]
+        else:
+            v2_pred = "uncertain"
+
+        # Determine 3-Model Majority Vote (TMR + Multilingual + Gradient)
+        preds = [t_res["prediction"], m_res["prediction"], g_res["prediction"]]
+        ai_votes = preds.count("likely_ai_generated")
+        human_votes = preds.count("likely_human")
+
+        if ai_votes >= 2:
+            v3_majority = "likely_ai_generated"
+        else:
+            v3_majority = "likely_human"
+
+        combined_rows.append({
+            "row_id": idx + 1,
+            "actual_label": label,
+            "text_snippet": row["text"][:80].replace("\n", " "),
+            "tmr_score": t_res["ai_score"],
+            "tmr_pred": t_res["prediction"],
+            "multi_score": m_res["ai_score"],
+            "multi_pred": m_res["prediction"],
+            "gradient_score": g_res["ai_score"],
+            "gradient_pred": g_res["prediction"],
+            "v2_ensemble_pred": v2_pred,
+            "v3_majority_pred": v3_majority,
+            "three_way_agreement": (t_res["prediction"] == m_res["prediction"] == g_res["prediction"])
+        })
+
+    res_df = pd.DataFrame(combined_rows)
+    os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
+    res_df.to_csv(OUTPUT_CSV, index=False)
+    print(f"\nSaved 3-model detailed comparison to {OUTPUT_CSV}")
+
+    # Summary Analysis
+    print("\n================ THREE-MODEL COMPARISON ANALYSIS ================")
+    print(f"Total Samples Evaluated: {len(res_df)}")
+    print(f"Full 3-Way Agreement Count: {res_df['three_way_agreement'].sum()} / {len(res_df)}")
+    
+    # Resolution of the 34 V2 Disagreements
+    v2_uncertain = res_df[res_df["v2_ensemble_pred"] == "uncertain"]
+    print(f"\n--- Analysis of 2-Model Disagreements ({len(v2_uncertain)} samples) ---")
+    
+    resolved_as_ai = (v2_uncertain["gradient_pred"] == "likely_ai_generated").sum()
+    resolved_as_human = (v2_uncertain["gradient_pred"] == "likely_human").sum()
+    print(f"Gradient voted AI    (Broke tie to AI)   : {resolved_as_ai}")
+    print(f"Gradient voted HUMAN (Broke tie to HUMAN): {resolved_as_human}")
+
+    # Metrics helper
+    def calc_metrics(preds, targets):
+        tp = sum(1 for p, t in zip(preds, targets) if p == "likely_ai_generated" and t in ["ai", "ai_generated", "likely_ai_generated"])
+        fp = sum(1 for p, t in zip(preds, targets) if p == "likely_ai_generated" and t in ["human", "likely_human"])
+        tn = sum(1 for p, t in zip(preds, targets) if p == "likely_human" and t in ["human", "likely_human"])
+        fn = sum(1 for p, t in zip(preds, targets) if p == "likely_human" and t in ["ai", "ai_generated", "likely_ai_generated"])
+        
+        acc = (tp + tn) / len(targets) if targets else 0
+        prec = tp / (tp + fp) if (tp + fp) > 0 else 0
+        rec = tp / (tp + fn) if (tp + fn) > 0 else 0
+        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0
+        return tp, fp, tn, fn, acc, prec, rec, f1
+
+    labels = res_df["actual_label"].str.lower().tolist()
+    
+    g_tp, g_fp, g_tn, g_fn, g_acc, g_prec, g_rec, g_f1 = calc_metrics(res_df["gradient_pred"].tolist(), labels)
+    v3_tp, v3_fp, v3_tn, v3_fn, v3_acc, v3_prec, v3_rec, v3_f1 = calc_metrics(res_df["v3_majority_pred"].tolist(), labels)
+
+    print("\n--- Model Performance Metrics ---")
+    print(f"Gradient Alone   -> Acc: {g_acc:.4f} | Prec: {g_prec:.4f} | Rec: {g_rec:.4f} | F1: {g_f1:.4f} (TP:{g_tp}, FP:{g_fp}, TN:{g_tn}, FN:{g_fn})")
+    print(f"3-Model Majority -> Acc: {v3_acc:.4f} | Prec: {v3_prec:.4f} | Rec: {v3_rec:.4f} | F1: {v3_f1:.4f} (TP:{v3_tp}, FP:{v3_fp}, TN:{v3_tn}, FN:{v3_fn})")
+    print("=================================================================")
 
 if __name__ == "__main__":
-    run_comparison()
+    main()
