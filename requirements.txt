@@ -1,5 +1,7 @@
 torch
+torchvision
 transformers
+Pillow
 sentencepiece
 onnxruntime
 pytest
