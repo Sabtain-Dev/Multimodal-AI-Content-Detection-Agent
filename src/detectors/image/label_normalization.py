@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-
+from typing import Union
 
 AI_LABELS = {
 	"ai",
@@ -20,20 +20,34 @@ HUMAN_LABELS = {
 }
 
 
-def normalize_image_label(native_label: str) -> str:
-	"""Map a model-specific image label to the shared prediction vocabulary."""
-	normalized_label = re.sub(r"[_-]+", " ", native_label.strip().lower())
+"""
+Label normalization for image detection models.
+Standardizes heterogeneous raw model outputs into canonical binary values ("AI" | "HUMAN").
+"""
 
-	if normalized_label in AI_LABELS or any(
-		label in normalized_label for label in ("ai", "artificial", "generated", "synthetic")
-	):
-		return "AI"
-	if normalized_label in HUMAN_LABELS or any(
-		label in normalized_label for label in ("human", "real", "authentic", "natural")
-	):
-		return "HUMAN"
 
-	raise ValueError(f"Unsupported image classification label: {native_label!r}")
+def normalize_image_label(raw_label: str) -> str:
+    """
+    Normalizes raw model label strings into standard binary format.
+
+    Supported variants:
+    - AI: 'ai', 'artificial', 'fake', 'generated', 'label_1', '1'
+    - HUMAN: 'human', 'real', 'authentic', 'label_0', '0'
+    """
+    if not raw_label:
+        raise ValueError("Cannot normalize an empty or None label string.")
+
+    cleaned = str(raw_label).strip().lower()
+
+    ai_indicators = {"ai", "artificial", "fake", "generated", "synthetic", "label_1", "1"}
+    human_indicators = {"human", "real", "authentic", "label_0", "0"}
+
+    if cleaned in ai_indicators:
+        return "AI"
+    elif cleaned in human_indicators:
+        return "HUMAN"
+    else:
+        raise ValueError(f"Unrecognized image detection label string: '{raw_label}'")
 
 
 def build_normalized_prediction(

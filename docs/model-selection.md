@@ -28,7 +28,8 @@ For every candidate model, we will evaluate:
 | `Oxidane/tmr-ai-text-detector` | Text | AI Detection | RoBERTa-base, ~125M parameters | Check model card | RAID, 50k samples | English-focused; threshold `0.70` |
 | `mujian2026/multilingual-ai-text-detector` | Text | AI Detection | XLM-RoBERTa-base, ~279M parameters | Check model card | 900 QA pairs | ONNX runtime; threshold `0.50` |
 | `ShantanuT01/gradient-ai-text-detector` | Text | AI Detection | DeBERTa-v3-based classifier | Check model card | Check model card | Single-logit output; threshold `0.50` |
-| TBD | Image | AI Detection | TBD | TBD | TBD | TBD |
+| `Ateeqq/ai-vs-human-image-detector` | Image | AI Detection | Vision model, domain specific | Check model card | Image authenticity benchmark data | Support model; threshold `0.70` |
+| `haywoodsloan/ai-image-detector-deploy` | Image | AI Detection | Vision model, deployment optimized | Check model card | Production image split | Primary decision model; threshold `0.50` |
 | TBD | Audio | AI Detection | TBD | TBD | TBD | TBD |
 | TBD | Video | AI Detection | TBD | TBD | TBD | TBD |
 
@@ -50,3 +51,12 @@ On the current 101-sample evaluation set, the three-model majority achieved
 `84.16%` accuracy and `0.8400` F1, compared with `82.18%` accuracy and
 `0.7805` F1 for Gradient alone. These results are dataset-specific and are not
 claims of universal detector accuracy.
+
+## Current Image Selection
+
+The image detector currently uses a two-model ensemble rather than the text
+majority-vote pattern. Model 2 is treated as the primary decision maker because
+it offers the direct deployment-oriented classification signal, while Model 1 is
+used as a supporting validator. This policy is intentionally simple and
+lightweight for V1: it keeps the output to a binary `AI` or `HUMAN` label while
+still capturing disagreement cases in the telemetry and capped confidence score.
