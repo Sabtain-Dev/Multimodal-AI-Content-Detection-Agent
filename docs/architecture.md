@@ -67,6 +67,9 @@ flowchart TD
     ROUTER --> AUDIO
     ROUTER --> VIDEO
 
+    IMAGE --> IMG_ENSEMBLE["Dual-Model Image Ensemble"]
+    IMG_ENSEMBLE --> IMG_RESULT["AI / HUMAN Output"]
+
     VIDEO --> FRAMES
     VIDEO --> AUDIO_EXT
 
@@ -100,6 +103,18 @@ flowchart TD
 | **Intelligent**    | Detection Agent orchestrates the analysis pipeline  |
 | **Evidence-Based** | Results are supported by detector-level evidence    |
 | **Multi-Modal**    | Video combines visual and audio analysis            |
+| **Image-Ready**    | Image detection already uses a two-model ensemble   |
 | **Unified Output** | All evidence is consolidated into one final report  |
+
+---
+
+## Current Image Detector Design
+
+The image branch uses two classifiers:
+
+- `Ateeqq/ai-vs-human-image-detector` as the supporting model
+- `haywoodsloan/ai-image-detector-deploy` as the primary decision model
+
+The ensemble compares the binary labels from both models. If they agree, the shared label is kept. If they disagree, the model-2 decision wins and the confidence indicator is capped at `Moderate`. The result is returned in a normalized payload with the modality, label, score, and model-level telemetry.
 
 ---
