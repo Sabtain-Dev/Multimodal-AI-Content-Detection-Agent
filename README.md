@@ -37,16 +37,24 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 
 ### Latest Evaluation
 
-The current evaluation uses 101 samples: 51 human and 50 AI.
+The project retains the historical benchmark as the official validated result, while the Kaggle-backed dataset path is now enabled for reproducible evaluation when credentials are available.
 
-| Configuration | Accuracy | Precision | Recall | F1 |
-|---|---:|---:|---:|---:|
-| Gradient alone | 82.18% | 100.00% | 64.00% | 0.7805 |
-| Three-model majority | 84.16% | 84.00% | 84.00% | 0.8400 |
+| Dataset source | Configuration | Accuracy | Precision | Recall | F1 |
+|---|---|---:|---:|---:|---:|
+| Historical local benchmark (validated) | Gradient alone | 82.18% | 100.00% | 64.00% | 0.7805 |
+| Historical local benchmark (validated) | Three-model majority | 84.16% | 84.00% | 84.00% | 0.8400 |
+| Kaggle dataset path (pending credential-backed validation) | TMR | Pending | Pending | Pending | Pending |
+| Kaggle dataset path (pending credential-backed validation) | Multilingual | Pending | Pending | Pending | Pending |
+| Kaggle dataset path (pending credential-backed validation) | Gradient | Pending | Pending | Pending | Pending |
+| Kaggle dataset path (pending credential-backed validation) | Three-model majority | Pending | Pending | Pending | Pending |
 
-The agent loads the three models sequentially to reduce peak memory usage. A
-two-out-of-three vote determines `likely_ai_generated` or `likely_human`, and
-the result reports each model score, vote counts, and agreement strength.
+The agent loads the three text models sequentially to reduce peak memory usage. A two-out-of-three vote determines `likely_ai_generated` or `likely_human`, and the result reports each model score, vote counts, and agreement strength.
+
+The Kaggle dataset links are now treated as the canonical data source for the evaluation scripts:
+- AI vs. Human Text Detection Dataset: https://www.kaggle.com/datasets/itssabtain/ai-vs-human-text-detection-dataset
+- Synthetic vs. Real Image Classifier: https://www.kaggle.com/datasets/itssabtain/image-detector-ai-vs-human
+
+To generate the official Kaggle benchmark locally, export Kaggle credentials first or place a valid `~/.kaggle/kaggle.json` file in the environment before running the evaluation scripts. Until that is done, the previously validated numbers remain the official project benchmark.
 
 ## Repository Structure
 

@@ -47,10 +47,19 @@ the shared `TextAIDetector` schema. The ensemble selects the majority class:
 The Gradient checkpoint returns one logit rather than two class logits. The
 detector converts that value with sigmoid before applying the `0.50` threshold.
 
-On the current 101-sample evaluation set, the three-model majority achieved
+On the historical 101-sample local benchmark, the three-model majority achieved
 `84.16%` accuracy and `0.8400` F1, compared with `82.18%` accuracy and
 `0.7805` F1 for Gradient alone. These results are dataset-specific and are not
 claims of universal detector accuracy.
+
+The evaluation scripts now resolve the dataset through the Kaggle-backed source
+links for the project; however, the historical benchmark remains the project’s
+official result until a credential-backed Kaggle run is completed. In this
+container, direct Kaggle downloads were blocked by missing credentials, so the
+end-to-end code path was validated with a local override dataset only. That local
+smoke test confirmed the scripts execute correctly, but it does not replace the
+official benchmark. The canonical project result remains the previously validated
+`84.16%` accuracy and `0.8400` F1 majority-vote score.
 
 ## Current Image Selection
 
