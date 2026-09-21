@@ -3,8 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from src.detectors.kaggle_dataset import resolve_text_dataset_dir
 from src.detectors.text.detector import TextAIDetector
 
 MODEL_NAME = "Oxidane/tmr-ai-text-detector"
@@ -12,8 +13,8 @@ EXPECTED_SAMPLE_COUNT = 101
 
 
 def run_tmr_evaluation():
-    project_root = Path(__file__).resolve().parents[1]
-    base_dir = project_root / "data" / "text" / "evaluation"
+    project_root = Path(__file__).resolve().parents[2]
+    base_dir = resolve_text_dataset_dir(project_root)
     results_dir = project_root / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 

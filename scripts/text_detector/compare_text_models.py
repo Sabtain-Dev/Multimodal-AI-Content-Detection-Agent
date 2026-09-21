@@ -5,12 +5,13 @@ from pathlib import Path
 import pandas as pd
 import torch
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from src.detectors.kaggle_dataset import resolve_text_dataset_dir
 from src.detectors.text.detector import TextAIDetector
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATASET_DIR = PROJECT_ROOT / "data" / "text" / "evaluation"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATASET_DIR = resolve_text_dataset_dir(PROJECT_ROOT)
 OUTPUT_CSV = PROJECT_ROOT / "results" / "three_models_comparison.csv"
 
 def clean_memory():

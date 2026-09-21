@@ -6,3 +6,4 @@ sentencepiece
 onnxruntime
 pytest
 pandas
+kagglehub

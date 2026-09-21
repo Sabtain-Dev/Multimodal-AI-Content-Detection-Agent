@@ -7,9 +7,14 @@ import torch
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from src.detectors.kaggle_dataset import resolve_image_dataset_dir
+
 MODEL_NAME = "haywoodsloan/ai-image-detector-deploy"
-DATASET_DIR = Path("data/image/evaluation")
-OUTPUT_CSV = Path("results/image_detector_2_results.csv")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATASET_DIR = resolve_image_dataset_dir(PROJECT_ROOT)
+OUTPUT_CSV = PROJECT_ROOT / "results" / "image_detector_2_results.csv"
 
 LABEL_MAPPING = {
     "ai": "AI",

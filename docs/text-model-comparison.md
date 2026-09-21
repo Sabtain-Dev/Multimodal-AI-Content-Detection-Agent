@@ -136,10 +136,10 @@ On the shared 101-sample dataset, using threshold `0.50`:
 
 ### Ensemble Evaluation
 
-The three-model comparison evaluated 101 samples: 51 human and 50 AI. The
+The project historically evaluated 101 samples: 51 human and 50 AI. The
 majority result was:
 
-| Metric | Result |
+| Metric | Historical local benchmark |
 |---|---:|
 | Accuracy | 84.16% |
 | Precision | 84.00% |
@@ -150,7 +150,16 @@ majority result was:
 | True Negatives | 43 |
 | False Negatives | 8 |
 
-The result improved on the earlier two-model evaluation, which produced
+The scripts now resolve the text and image data from the Kaggle dataset links in
+this project, rather than from a local folder. In this environment, Kaggle
+credentials were not available, so validation used a local override dataset to
+confirm the execution path, but that smoke test is not treated as the official
+project benchmark. The real Kaggle benchmark should be regenerated on a machine
+with valid Kaggle credentials to refresh the canonical numbers for the shared
+dataset; until then, the previously validated `84.16%` accuracy and `0.8400` F1
+majority-vote result remains the official project benchmark.
+
+The historical result improved on the earlier two-model evaluation, which produced
 `56.44%` accuracy and `0.8780` F1 when uncertain disagreements were retained.
 Because the two evaluations use different final-decision rules, the metrics
 should be compared as separate operating points rather than as a controlled
