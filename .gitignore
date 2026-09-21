@@ -16,7 +16,7 @@ env/
 
 # Models and datasets
 models/
-datasets/
+data/
 
 *.pt
 *.pth
