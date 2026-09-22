@@ -7,3 +7,4 @@ onnxruntime
 pytest
 pandas
 kagglehub
+librosa

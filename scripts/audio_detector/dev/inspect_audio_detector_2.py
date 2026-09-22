@@ -1,32 +1,23 @@
-"""
-Inspection script for Audio Detector Model 2: refikbklm/fake-audio-detector-model
-Extracts architecture type, label mappings, and sampling rate settings.
-"""
-import sys
 from transformers import AutoConfig
 
-MODEL_ID = "refikbklm/fake-audio-detector-model"
+MODEL_ID = "Mahmoud59/wav2vec2-fake-audio-detector"
 
-
-def inspect_model_2():
-    print("=" * 70)
+def main():
+    print("=" * 60)
     print("INSPECTING AUDIO DETECTOR 2")
-    print("=" * 70)
-    print(f"Model ID      : {MODEL_ID}")
-
+    print("=" * 60)
     try:
         config = AutoConfig.from_pretrained(MODEL_ID)
-        print(f"Architecture  : {config.architectures}")
-        print(f"Model type    : {config.model_type}")
-        print(f"ID2LABEL      : {config.id2label}")
-        print(f"LABEL2ID      : {config.label2id}")
-        print(f"Sampling rate : {getattr(config, 'sampling_rate', 'not specified in config')}")
+        print(f"Model ID       : {MODEL_ID}")
+        print(f"Architecture   : {getattr(config, 'architectures', 'N/A')}")
+        print(f"Model type     : {getattr(config, 'model_type', 'N/A')}")
+        print(f"Num labels     : {getattr(config, 'num_labels', 'N/A')}")
+        print(f"ID2LABEL       : {getattr(config, 'id2label', 'N/A')}")
+        print(f"LABEL2ID       : {getattr(config, 'label2id', 'N/A')}")
+        print(f"Sampling rate  : {getattr(config, 'sampling_rate', 'not specified')}")
     except Exception as e:
-        print(f"Error fetching configuration for {MODEL_ID}: {e}")
-        sys.exit(1)
-
-    print("=" * 70 + "\n")
-
+        print(f"Error inspecting model {MODEL_ID}: {e}")
+    print("=" * 60)
 
 if __name__ == "__main__":
-    inspect_model_2()
+    main()
