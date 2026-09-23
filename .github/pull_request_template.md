@@ -10,7 +10,7 @@ Briefly explain what this PR changes.
 - [ ] Code works as expected
 - [ ] Changes have been tested
 - [ ] No unnecessary files included
-- [ ] Documentation updated (if needed)
+- [ ] Documentation updated
 
 ## Related Issue
 Closes #

@@ -87,6 +87,9 @@ multimodal-ai-content-detection-agent/
 └── results/
 ```
 
+## License
+This project is licensed under the [Apache License 2.0](LICENSE).
+
 ## Quickstart & Testing
 ### Install Dependencies:
 ```Bash
