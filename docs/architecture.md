@@ -117,4 +117,8 @@ The image branch uses two classifiers:
 
 The ensemble compares the binary labels from both models. If they agree, the shared label is kept. If they disagree, the model-2 decision wins and the confidence indicator is capped at `Moderate`. The result is returned in a normalized payload with the modality, label, score, and model-level telemetry.
 
+## Current Audio Detector Design
+
+The audio detector runs Model 1 for supporting telemetry, then Model 2 as the primary decision-maker. Model 2's AI probability is compared with a `0.90` threshold to produce the final `AI` or `HUMAN` label. The result includes each model's native and normalized label, model agreement, primary/final alignment, confidence indicator, and decision threshold. The audio branch feeds its result into the system's evidence aggregation flow. See [audio-detector.md](./audio-detector.md) for the execution graph, result schema, tests, and evaluation artifacts.
+
 ---

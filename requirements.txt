@@ -8,5 +8,8 @@ sentencepiece
 onnxruntime
 pytest
 pandas
+pandas-stubs
 kagglehub
 librosa
+soundfile
+pydub

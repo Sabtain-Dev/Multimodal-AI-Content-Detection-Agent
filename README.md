@@ -1,9 +1,9 @@
 # Multimodal AI Content Detection Agent
 
-**Status:** Day 8 : Text + Image Detection Pipeline Active
+**Status:** Text, image, and audio detector packages implemented and manually tested; video detection planned
 
 ## Description
-A multimodal system designed to detect potentially AI-generated text, images, audio, and video using open-source pretrained models.
+A multimodal system designed to detect potentially AI-generated text, images, and audio using open-source pretrained models, with video detection planned.
 
 ## Project Objective
 Develop a resource-efficient AI detection system leveraging pretrained models without fine-tuning in Version 1.
@@ -11,7 +11,7 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 ## Modalities Progress
 * 🟢 **Text:** Three-model detector and majority-vote agent implemented
 * 🟢 **Image:** Dual-model ensemble detector implemented and validated
-* ⚪ **Audio:** Planned
+* 🟢 **Audio:** Two-model detector, primary-decision ensemble, CLI pipeline, tests, and evaluation tooling implemented
 * ⚪ **Video:** Planned
 
 ## Tech Stack
@@ -34,6 +34,12 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 * **Secondary Image Model:** `haywoodsloan/ai-image-detector-deploy` with threshold `0.50`.
 * **Ensemble Policy:** The second model acts as the primary decision-maker; if both models disagree, the final label follows the model-2 output while confidence stays capped as `Moderate`.
 * **Pipeline Flow:** `Image Input` $\rightarrow$ `Model 1 Score + Model 2 Score` $\rightarrow$ `Binary Label Derivation` $\rightarrow$ `Consensus / Fallback Decision` $\rightarrow$ `Normalized Output Payload`.
+
+### Audio Detection Architecture (V1)
+* **Supporting Model:** `Sayantan090/audio-fake-detector` (`FAKE` → `AI`; `REAL` → `HUMAN`).
+* **Primary Model:** `Mahmoud59/wav2vec2-fake-audio-detector` (`LABEL_0` → `AI`; `LABEL_1` → `HUMAN`), using a `0.90` AI-score threshold.
+* **Ensemble Policy:** Model 1 contributes telemetry and agreement information; Model 2 determines the final label using the threshold.
+* **Pipeline Flow:** `Audio File(s)` $\rightarrow$ `Model 1 Inference` $\rightarrow$ `Model 2 Inference` $\rightarrow$ `Model 2 Threshold Decision` $\rightarrow$ `Confidence + Agreement Telemetry` $\rightarrow$ `Structured Result`.
 
 ### Latest Evaluation
 
@@ -65,6 +71,11 @@ multimodal-ai-content-detection-agent/
 ├── scripts/
 ├── src/
 │   └── detectors/
+│       ├── audio/
+│       │   ├── __init__.py
+│       │   ├── audio_detectors.py
+│       │   ├── ensemble.py
+│       │   └── label_normalization.py
 │       ├── image/
 │       │   ├── __init__.py
 │       │   ├── ensemble.py
@@ -77,6 +88,8 @@ multimodal-ai-content-detection-agent/
 │           └── schemas.py
 │
 ├── tests/
+│   ├── test_audio_detector_package.py
+│   ├── test_audio_label_normalization.py
 │   ├── test_image_detector_package.py
 │   └── test_text_detector.py
 │
@@ -86,6 +99,8 @@ multimodal-ai-content-detection-agent/
 ├── requirements.txt
 └── results/
 ```
+
+See [docs/audio-detector.md](docs/audio-detector.md) for the audio execution graph, output contract, test commands, and evaluation artifacts.
 
 ## License
 This project is licensed under the [Apache License 2.0](LICENSE).
@@ -110,6 +125,18 @@ python3 scripts/text_detector/test_text_agent.py
 ```Bash
 python3 -c "from src.detectors.image import ImageDetector; print(ImageDetector().predict('test.jpg', 0.8, 0.2))"
 ```
+
+### Run the Audio Detector:
+```Bash
+python3 scripts/audio_detector/pipeline.py --input path/to/audio.wav
+```
+
+Run the audio unit tests with:
+```Bash
+python3 -m pytest tests/test_audio_label_normalization.py tests/test_audio_detector_package.py -q
+```
+
+See [docs/audio-detector.md](docs/audio-detector.md) for the complete audio output schema, execution diagram, test commands, and evaluation artifact list.
 
 The project uses a virtual environment in `.venv`. Activate it first when the
 system Python does not contain the required dependencies:
