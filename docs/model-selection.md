@@ -30,7 +30,8 @@ For every candidate model, we will evaluate:
 | `ShantanuT01/gradient-ai-text-detector` | Text | AI Detection | DeBERTa-v3-based classifier | Check model card | Check model card | Single-logit output; threshold `0.50` |
 | `Ateeqq/ai-vs-human-image-detector` | Image | AI Detection | Vision model, domain specific | Check model card | Image authenticity benchmark data | Support model; threshold `0.70` |
 | `haywoodsloan/ai-image-detector-deploy` | Image | AI Detection | Vision model, deployment optimized | Check model card | Production image split | Primary decision model; threshold `0.50` |
-| TBD | Audio | AI Detection | TBD | TBD | TBD | TBD |
+| `Sayantan090/audio-fake-detector` | Audio | AI-generated speech detection | Wav2Vec2 audio classifier | Check model card | Check model card | Supporting model; `FAKE` → AI, `REAL` → HUMAN |
+| `Mahmoud59/wav2vec2-fake-audio-detector` | Audio | AI-generated speech detection | Wav2Vec2 audio classifier | Check model card | Check model card | Primary decision model; `LABEL_0` → AI, `LABEL_1` → HUMAN; threshold `0.90` |
 | TBD | Video | AI Detection | TBD | TBD | TBD | TBD |
 
 ## Current Text Selection
@@ -60,6 +61,20 @@ end-to-end code path was validated with a local override dataset only. That loca
 smoke test confirmed the scripts execute correctly, but it does not replace the
 official benchmark. The canonical project result remains the previously validated
 `84.16%` accuracy and `0.8400` F1 majority-vote score.
+
+## Current Audio Selection
+
+The completed audio detector uses two audio-classification models with different
+roles. `Sayantan090/audio-fake-detector` supplies supporting evidence and model
+agreement telemetry. `Mahmoud59/wav2vec2-fake-audio-detector` is the primary
+decision model: its normalized AI probability is compared with threshold `0.90`
+to choose the final `AI` or `HUMAN` label. The Model 1 output does not override
+the primary decision.
+
+Native labels are mapped separately for each model: Model 1's `FAKE`/`REAL`
+labels map to `AI`/`HUMAN`, and Model 2's `LABEL_0`/`LABEL_1` labels map to
+`AI`/`HUMAN`. The implemented pipeline, output schema, and evaluation artifact
+descriptions are in [audio-detector.md](./audio-detector.md).
 
 ## Current Image Selection
 
