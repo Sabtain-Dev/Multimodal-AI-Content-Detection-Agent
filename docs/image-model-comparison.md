@@ -123,6 +123,16 @@ The image detector returns a dictionary similar to the following:
 
 This output is designed to be easy to consume in downstream orchestration and easy to inspect in evaluation logs.
 
+## Evaluation Dataset
+
+The [Synthetic vs. Real Image
+Classifier](https://www.kaggle.com/datasets/itssabtain/image-detector-ai-vs-human)
+is the image evaluation dataset already used for project testing. The
+evaluation scripts first honor `MULTIMODAL_IMAGE_DATASET_DIR`, then use
+`data/image/evaluation` when local data is present; otherwise, the shared
+dataset resolver can download the Kaggle dataset into that local data path.
+No additional direct Kaggle run is required.
+
 ---
 
 ## Selection Recommendation

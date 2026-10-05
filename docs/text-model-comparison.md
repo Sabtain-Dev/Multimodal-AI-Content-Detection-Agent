@@ -150,14 +150,14 @@ majority result was:
 | True Negatives | 43 |
 | False Negatives | 8 |
 
-The scripts now resolve the text and image data from the Kaggle dataset links in
-this project, rather than from a local folder. In this environment, Kaggle
-credentials were not available, so validation used a local override dataset to
-confirm the execution path, but that smoke test is not treated as the official
-project benchmark. The real Kaggle benchmark should be regenerated on a machine
-with valid Kaggle credentials to refresh the canonical numbers for the shared
-dataset; until then, the previously validated `84.16%` accuracy and `0.8400` F1
-majority-vote result remains the official project benchmark.
+The evaluation dataset is the [AI vs. Human Text Detection
+Dataset](https://www.kaggle.com/datasets/itssabtain/ai-vs-human-text-detection-dataset),
+which has already been used for project testing. The evaluation scripts first
+honor `MULTIMODAL_TEXT_DATASET_DIR`, then use `data/text/evaluation` when local
+data is present; otherwise, the shared resolver can download the Kaggle dataset
+into that local data path. No additional direct Kaggle run is required. The
+previously reported `84.16%` accuracy and `0.8400` F1 majority-vote result is
+retained above.
 
 The historical result improved on the earlier two-model evaluation, which produced
 `56.44%` accuracy and `0.8780` F1 when uncertain disagreements were retained.

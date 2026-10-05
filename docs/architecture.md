@@ -2,6 +2,23 @@
 
 ---
 
+## Implemented Scope
+
+The current implementation includes a file-based multimodal agent that routes
+text, image, and audio inputs to modality-specific logic. It does not yet
+include the web interface, FastAPI integration, evidence aggregator, final
+report flow, or video detection shown in the target architecture diagrams
+below; those remain planned system architecture.
+
+Supported file extensions are `.txt`, `.md`, and `.csv` for text; `.jpg`,
+`.jpeg`, `.png`, and `.webp` for images; and `.wav`, `.mp3`, `.ogg`, `.m4a`,
+and `.flac` for audio. Video is not currently supported.
+
+The text route runs the three-model detector ensemble, and the audio route
+runs the two-model primary-decision ensemble. The image route applies the
+two-model decision policy to scores supplied by the caller; image loading and
+model inference are not yet wired into the multimodal agent.
+
 ## High-Level Architecture
 
 ```mermaid
@@ -115,7 +132,7 @@ The image branch uses two classifiers:
 - `Ateeqq/ai-vs-human-image-detector` as the supporting model
 - `haywoodsloan/ai-image-detector-deploy` as the primary decision model
 
-The ensemble compares the binary labels from both models. If they agree, the shared label is kept. If they disagree, the model-2 decision wins and the confidence indicator is capped at `Moderate`. The result is returned in a normalized payload with the modality, label, score, and model-level telemetry.
+The ensemble compares the binary labels from both models. If they agree, the shared label is kept. If they disagree, the model-2 decision wins and the confidence indicator is capped at `Moderate`. The result is returned in a normalized payload with the modality, label, score, and model-level telemetry. Currently, the multimodal agent receives the two model scores from its caller instead of running image-model inference.
 
 ## Current Audio Detector Design
 
