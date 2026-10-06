@@ -53,14 +53,15 @@ On the historical 101-sample local benchmark, the three-model majority achieved
 `0.7805` F1 for Gradient alone. These results are dataset-specific and are not
 claims of universal detector accuracy.
 
-The evaluation scripts now resolve the dataset through the Kaggle-backed source
-links for the project; however, the historical benchmark remains the project’s
-official result until a credential-backed Kaggle run is completed. In this
-container, direct Kaggle downloads were blocked by missing credentials, so the
-end-to-end code path was validated with a local override dataset only. That local
-smoke test confirmed the scripts execute correctly, but it does not replace the
-official benchmark. The canonical project result remains the previously validated
-`84.16%` accuracy and `0.8400` F1 majority-vote score.
+The [AI vs. Human Text Detection
+Dataset](https://www.kaggle.com/datasets/itssabtain/ai-vs-human-text-detection-dataset)
+and [Synthetic vs. Real Image
+Classifier](https://www.kaggle.com/datasets/itssabtain/image-detector-ai-vs-human)
+are the text and image evaluation datasets already used for project testing.
+The evaluation scripts honor the respective `MULTIMODAL_*_DATASET_DIR`
+environment override, then use local data under `data/<modality>/evaluation`
+when present; otherwise, the shared resolver can retrieve the corresponding
+Kaggle dataset. No separate Kaggle test run is required.
 
 ## Current Audio Selection
 

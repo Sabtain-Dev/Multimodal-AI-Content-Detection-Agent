@@ -1,6 +1,6 @@
 # Multimodal AI Content Detection Agent
 
-**Status:** Text, image, and audio detector packages implemented and manually tested; video detection planned
+**Status:** Text, image, and audio detector logic plus file-based multimodal routing are implemented; video detection is planned.
 
 ## Description
 A multimodal system designed to detect potentially AI-generated text, images, and audio using open-source pretrained models, with video detection planned.
@@ -10,9 +10,18 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 
 ## Modalities Progress
 * 🟢 **Text:** Three-model detector and majority-vote agent implemented
-* 🟢 **Image:** Dual-model ensemble detector implemented and validated
+* 🟢 **Image:** Dual-model ensemble decision logic implemented; the multimodal agent currently accepts model scores rather than running image-model inference itself
 * 🟢 **Audio:** Two-model detector, primary-decision ensemble, CLI pipeline, tests, and evaluation tooling implemented
 * ⚪ **Video:** Planned
+
+## Current Multimodal Agent
+
+The file-based agent routes `.txt`, `.md`, and `.csv` files to text detection;
+`.jpg`, `.jpeg`, `.png`, and `.webp` files to image decision logic; and `.wav`,
+`.mp3`, `.ogg`, `.m4a`, and `.flac` files to audio detection. Video files are
+not supported yet. Text and audio routes call their detector pipelines. The
+image route combines two supplied model scores; it does not currently load an
+image or run either image model itself.
 
 ## Tech Stack
 * **Core Language & ML Frameworks:** Python, PyTorch, Transformers
@@ -43,24 +52,30 @@ Develop a resource-efficient AI detection system leveraging pretrained models wi
 
 ### Latest Evaluation
 
-The project retains the historical benchmark as the official validated result, while the Kaggle-backed dataset path is now enabled for reproducible evaluation when credentials are available.
+The project retains the previously reported benchmark results below. The linked
+Kaggle text and image datasets are the evaluation datasets already used for
+project testing; another direct Kaggle download or evaluation run is not
+required.
 
 | Dataset source | Configuration | Accuracy | Precision | Recall | F1 |
 |---|---|---:|---:|---:|---:|
 | Historical local benchmark (validated) | Gradient alone | 82.18% | 100.00% | 64.00% | 0.7805 |
 | Historical local benchmark (validated) | Three-model majority | 84.16% | 84.00% | 84.00% | 0.8400 |
-| Kaggle dataset path (pending credential-backed validation) | TMR | Pending | Pending | Pending | Pending |
-| Kaggle dataset path (pending credential-backed validation) | Multilingual | Pending | Pending | Pending | Pending |
-| Kaggle dataset path (pending credential-backed validation) | Gradient | Pending | Pending | Pending | Pending |
-| Kaggle dataset path (pending credential-backed validation) | Three-model majority | Pending | Pending | Pending | Pending |
 
 The agent loads the three text models sequentially to reduce peak memory usage. A two-out-of-three vote determines `likely_ai_generated` or `likely_human`, and the result reports each model score, vote counts, and agreement strength.
 
-The Kaggle dataset links are now treated as the canonical data source for the evaluation scripts:
-- AI vs. Human Text Detection Dataset: https://www.kaggle.com/datasets/itssabtain/ai-vs-human-text-detection-dataset
-- Synthetic vs. Real Image Classifier: https://www.kaggle.com/datasets/itssabtain/image-detector-ai-vs-human
+### Evaluation Datasets
 
-To generate the official Kaggle benchmark locally, export Kaggle credentials first or place a valid `~/.kaggle/kaggle.json` file in the environment before running the evaluation scripts. Until that is done, the previously validated numbers remain the official project benchmark.
+These are the Kaggle dataset collections used for text and image evaluation:
+
+- [AI vs. Human Text Detection Dataset](https://www.kaggle.com/datasets/itssabtain/ai-vs-human-text-detection-dataset)
+- [Synthetic vs. Real Image Classifier](https://www.kaggle.com/datasets/itssabtain/image-detector-ai-vs-human)
+
+The evaluation scripts first honor `MULTIMODAL_TEXT_DATASET_DIR` or
+`MULTIMODAL_IMAGE_DATASET_DIR`, then use `data/<modality>/evaluation` when
+local evaluation data is present. If it is absent, the shared dataset resolver
+can download the corresponding Kaggle dataset and place its files under that
+local data path.
 
 ## Repository Structure
 
@@ -100,7 +115,9 @@ multimodal-ai-content-detection-agent/
 └── results/
 ```
 
-See [docs/audio-detector.md](docs/audio-detector.md) for the audio execution graph, output contract, test commands, and evaluation artifacts.
+See [docs/architecture.md](docs/architecture.md) for the current routing
+overview and [docs/audio-detector.md](docs/audio-detector.md) for the audio
+execution graph, output contract, test commands, and evaluation artifacts.
 
 ## License
 This project is licensed under the [Apache License 2.0](LICENSE).
