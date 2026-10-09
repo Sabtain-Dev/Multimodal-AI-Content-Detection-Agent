@@ -13,3 +13,4 @@ kagglehub
 librosa
 soundfile
 pydub
+decord
