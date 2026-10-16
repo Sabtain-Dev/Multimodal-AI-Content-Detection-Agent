@@ -8,7 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.detectors.video import VideoDetectorModel
 
-VIDEO_PATH = Path("data/Lumeluxe-Chatbot Demo.mp4")
+VIDEO_PATH = Path("data/human/1.mp4")
 
 
 def main():

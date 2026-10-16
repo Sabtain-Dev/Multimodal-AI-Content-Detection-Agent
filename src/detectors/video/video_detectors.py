@@ -29,13 +29,10 @@ class VideoDetectorModel:
         self.processor_engine = VideoProcessor(num_frames=self.num_frames)
 
     def predict(self, video_path: Union[str, Path]) -> Dict:
-        """Extracts frames from video and returns classification results."""
+        """Extracts frames from video and returns classification results with explicit AI probability scoring."""
         frames = self.processor_engine.extract_uniform_frames(video_path)
-
-        # Convert frame list to numpy array
         frames_array = np.asarray(frames)
 
-        # Prepare inputs using HF Image Processor
         inputs = self.processor(list(frames_array), return_tensors="pt")
         inputs = {key: value.to(self.device) for key, value in inputs.items()}
 
@@ -43,28 +40,36 @@ class VideoDetectorModel:
             outputs = self.model(**inputs)
             probabilities = torch.softmax(outputs.logits, dim=-1)[0]
 
+        # Map model labels (id2label usually {0: 'real', 1: 'fake'})
+        id2label = {int(k): v.lower() for k, v in self.model.config.id2label.items()}
+        
+        # Extract class probabilities mapped to project terminology
+        class_scores = {}
+        ai_probability = 0.0
+        
+        for idx, prob in enumerate(probabilities):
+            native_lbl = id2label.get(idx, "unknown")
+            if native_lbl == "real":
+                project_lbl = "HUMAN"
+            elif native_lbl == "fake":
+                project_lbl = "AI"
+                ai_probability = float(prob.item())
+            else:
+                project_lbl = native_lbl.upper()
+            
+            class_scores[project_lbl] = float(prob.item())
+
         predicted_id = int(torch.argmax(probabilities).item())
-        native_label = self.model.config.id2label[predicted_id].lower()
-
-        label_map = {
-            "real": "HUMAN",
-            "fake": "AI",
-        }
-
-        if native_label not in label_map:
-            raise ValueError(f"Unsupported video model label: {native_label}")
+        native_predicted_label = id2label.get(predicted_id, "real")
+        
+        final_label = "AI" if native_predicted_label == "fake" else "HUMAN"
 
         return {
             "modality": "video",
-            "label": label_map[native_label],
-            "model_score": float(probabilities[predicted_id].item()),
-            "class_scores": {
-                label_map[
-                    self.model.config.id2label[index].lower()
-                ]: float(probabilities[index].item())
-                for index in range(len(probabilities))
-            },
-            "native_label": native_label,
+            "label": final_label,
+            "model_score": ai_probability,  # Explicitly store AI probability for consistent thresholding
+            "class_scores": class_scores,
+            "native_label": native_predicted_label,
             "model_name": self.model_name,
             "num_frames": self.num_frames,
             "device": str(self.device),
