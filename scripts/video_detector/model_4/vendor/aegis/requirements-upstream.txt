@@ -1,0 +1,16 @@
+# torch ve torchvision burada YOK - CUDA/CPU'ya gore ayri kurulmali, ornek:
+#   pip install torch==2.5.0 torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cu121
+# Asagidakiler gelistirme sunucusunda dogrulanmis surumlerdir.
+
+timm==1.0.27
+einops==0.8.2
+opencv-python>=4.13.0
+decord==0.6.0
+numpy==2.2.6
+scipy==1.15.3
+pandas==2.3.3
+tqdm==4.67.3
+matplotlib==3.10.9
+scikit-learn==1.7.2
+safetensors==0.7.0
+pillow==12.2.0
