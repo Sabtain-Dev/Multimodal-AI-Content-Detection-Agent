@@ -1,3 +1,6 @@
+# AEGIS Model 4 - Additional runtime dependencies
+# Existing PyTorch, torchvision and NumPy versions are preserved.
+
 timm==1.0.27
 einops==0.8.2
-opencv-python-headless>=4.13.0
+opencv-python-headless==5.0.0.93
